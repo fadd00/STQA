@@ -18,10 +18,10 @@ import roulet from "../images/game/roullete.png";
 import lotre from "../images/game/lotre.png";
 
 const games = [
-  { name: "Blackjack", image: blackjack },
-  { name: "Slot Machine", image: slotmachine },
-  { name: "Roulet", image: roulet },
-  { name: "Lotre", image: lotre },
+  { name: "Blackjack", image: blackjack, path: "blackjack" },
+  { name: "Slot Machine", image: slotmachine, path: "slot" },
+  { name: "Roulet", image: roulet, path: "roulet" },
+  { name: "Lotre", image: lotre, path: "lotre" },
 ];
 
 const formatCurrency = (value) => {
@@ -71,8 +71,8 @@ export default function Home() {
     }
   };
 
-  const handleGameClick = (gameName) => {
-    router.push(`/game/${gameName.toLowerCase().replace(" ", "-")}`);
+  const handleGameClick = (game) => {
+    router.push(`/game/${game.path}`);
   };
 
   return (
@@ -164,7 +164,7 @@ export default function Home() {
             <div
               key={index}
               className="bg-gray-800 p-4 rounded-lg cursor-pointer"
-              onClick={() => handleGameClick(game.name)}
+              onClick={() => handleGameClick(game)}
             >
               <Image
                 src={game.image}

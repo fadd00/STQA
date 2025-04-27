@@ -23,6 +23,9 @@ export default function Home() {
   const [bet, setBet] = useState(0);
   const [message, setMessage] = useState("");
   const [user, setUser] = useState(null);
+  const [betType, setBetType] = useState("color"); // 'color' or 'number'
+  const [selectedNumber, setSelectedNumber] = useState(null);
+  const [selectedColor, setSelectedColor] = useState(null);
   const router = useRouter();
 
   useEffect(() => {
@@ -44,8 +47,20 @@ export default function Home() {
     return () => unsubscribe();
   }, []);
 
-  const handleBetChange = (amount) => {
-    setBet(amount);
+  const handleBetTypeChange = (type) => {
+    setBetType(type);
+    setSelectedNumber(null);
+    setSelectedColor(null);
+  };
+
+  const handleNumberSelect = (number) => {
+    setSelectedNumber(number);
+    setSelectedColor(null);
+  };
+
+  const handleColorSelect = (color) => {
+    setSelectedColor(color);
+    setSelectedNumber(null);
   };
 
   const handleSpin = async (result) => {
@@ -54,24 +69,77 @@ export default function Home() {
       return;
     }
 
-    const winMultiplier =
-      result.color === "green" ? 35 : result.color === "red" ? 2 : 1;
-    const winAmount = bet * winMultiplier;
-    const newBalance =
-      winMultiplier > 1 ? balance + (winAmount - bet) : balance - bet;
+    if (!selectedColor && !selectedNumber) {
+      setMessage("Please select a color or number to bet on.");
+      return;
+    }
 
-    setBalance(newBalance);
-    setMessage(
-      `You ${winAmount > bet ? "won" : "lost"} ${formatCurrency(winAmount)}!`
-    );
+    let isWin = false;
+    let winAmount = 0;
+    let lossAmount = 0;
 
+    // Implement 1:2 win ratio using random number
+    const winChance = Math.random();
+    const willWin = winChance <= 0.33; // 33% chance to win (1:2 ratio)
+
+    if (selectedColor) {
+      isWin = willWin; // Use predetermined win/loss instead of actual color match
+
+      if (selectedColor === "green") {
+        // Green color special rules (high risk, high reward)
+        if (isWin) {
+          winAmount = bet * 5; // Win 5x the bet
+        } else {
+          lossAmount = bet * 3; // Lose 3x the bet
+        }
+      } else {
+        // Red or Black rules
+        if (isWin) {
+          winAmount = bet * 2; // Win 2x the bet
+        } else {
+          lossAmount = bet; // Lose 1x the bet
+        }
+      }
+    } else if (selectedNumber !== null) {
+      isWin = willWin; // Use same win chance as green
+      if (isWin) {
+        winAmount = bet * 5; // Same multiplier as green
+      } else {
+        lossAmount = bet * 3; // Same loss multiplier as green
+      }
+    }
+
+    // Calculate new balance
+    const newBalance = isWin ? balance + winAmount : balance - lossAmount;
+
+    // Update balance and show message
     try {
-      const userId = user.uid;
-      const userRef = doc(db, "users", userId);
+      const userRef = doc(db, "users", user.uid);
       await updateDoc(userRef, { balance: newBalance });
+      setBalance(newBalance);
+      setMessage(
+        isWin
+          ? `Congratulations! You won ${formatCurrency(winAmount)}!`
+          : `Sorry, you lost ${formatCurrency(lossAmount)}.`
+      );
+
+      // Reset bet after spin
+      setBet(0);
+      setSelectedColor(null);
+      setSelectedNumber(null);
     } catch (error) {
       console.error("Error updating balance:", error);
+      setMessage("Error updating balance. Please try again.");
     }
+  };
+
+  const handleBetChange = (amount) => {
+    if (amount > balance) {
+      setMessage("Insufficient balance");
+      return;
+    }
+    setBet(amount);
+    setMessage("");
   };
 
   return (
@@ -100,21 +168,90 @@ export default function Home() {
         </div>
       </header>
       <div className="mt-10 flex flex-col items-center justify-center">
+        <div className="mb-4 flex space-x-4">
+          <button
+            onClick={() => handleBetTypeChange("color")}
+            className={`px-4 py-2 rounded ${
+              betType === "color" ? "bg-purple-600" : "bg-gray-700"
+            }`}
+          >
+            Bet on Color
+          </button>
+          <button
+            onClick={() => handleBetTypeChange("number")}
+            className={`px-4 py-2 rounded ${
+              betType === "number" ? "bg-purple-600" : "bg-gray-700"
+            }`}
+          >
+            Bet on Number
+          </button>
+        </div>
+
+        {betType === "color" && (
+          <div className="mb-4 flex space-x-2">
+            <button
+              onClick={() => handleColorSelect("red")}
+              className={`w-16 h-16 rounded-full bg-red-600 ${
+                selectedColor === "red" ? "ring-4 ring-white" : ""
+              }`}
+            />
+            <button
+              onClick={() => handleColorSelect("black")}
+              className={`w-16 h-16 rounded-full bg-black ${
+                selectedColor === "black" ? "ring-4 ring-white" : ""
+              }`}
+            />
+            <button
+              onClick={() => handleColorSelect("green")}
+              className={`w-16 h-16 rounded-full bg-green-600 ${
+                selectedColor === "green" ? "ring-4 ring-white" : ""
+              }`}
+            />
+          </div>
+        )}
+
+        {betType === "number" && (
+          <div className="mb-4 grid grid-cols-6 gap-2">
+            {[...Array(37)].map((_, i) => (
+              <button
+                key={i}
+                onClick={() => handleNumberSelect(i)}
+                className={`w-12 h-12 rounded-full ${
+                  selectedNumber === i
+                    ? "bg-purple-600"
+                    : "bg-gray-700 hover:bg-gray-600"
+                }`}
+              >
+                {i}
+              </button>
+            ))}
+          </div>
+        )}
+
         <div className="mb-4 flex space-x-2">
           {[10, 50, 100, 500, 1000].map((amount) => (
             <button
               key={amount}
               onClick={() => handleBetChange(amount)}
-              className={`p-4 rounded-full border border-gray-700 text-white text-lg font-bold bet-button ${
-                bet === amount ? "active" : ""
+              className={`p-4 rounded-full border border-gray-700 text-white text-lg font-bold ${
+                bet === amount ? "bg-purple-600" : ""
               }`}
             >
               {formatCurrency(amount)}
             </button>
           ))}
         </div>
+
         <RouletteWheel onSpin={handleSpin} />
-        {message && <p className="mt-4 text-red-500">{message}</p>}
+        {message && (
+          <p
+            className={`mt-4 text-xl ${
+              message.includes("won") ? "text-green-500" : "text-red-500"
+            }`}
+          >
+            {message}
+          </p>
+        )}
       </div>
     </div>
   );

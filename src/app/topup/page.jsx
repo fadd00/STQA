@@ -1,14 +1,14 @@
 "use client";
-import { useState, useEffect } from 'react';
-import { onAuthStateChanged, signOut } from 'firebase/auth';
-import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
-import { auth, db } from '../../lib/firebase';
-import { useRouter } from 'next/navigation';
-import Image from 'next/image';
+import { useState, useEffect } from "react";
+import { onAuthStateChanged, signOut } from "firebase/auth";
+import { doc, getDoc, setDoc, updateDoc } from "firebase/firestore";
+import { auth, db } from "../../lib/firebase";
+import { useRouter } from "next/navigation";
+import Image from "next/image";
 
 // Import images
-import currency from '../../images/assets/currency.png';
-import topuimg from '../../images/topup/icon.jpeg';
+import currency from "../../images/assets/currency.png";
+import topuimg from "../../images/topup/icon.jpeg";
 
 const topUpOptions = [
   { tokens: 8, bonus: 2, price: 16, image: topuimg },
@@ -22,33 +22,39 @@ const topUpOptions = [
 ];
 
 const formatCurrency = (value) => {
-  return new Intl.NumberFormat('en', {
-    style: 'currency',
-    currency: 'usd',
+  return new Intl.NumberFormat("en", {
+    style: "currency",
+    currency: "usd",
     maximumSignificantDigits: 3,
-  }).format(value).replace(/\u00A0/g, ' '); // Replace Non-Breaking Space with a regular space
+  })
+    .format(value)
+    .replace(/\u00A0/g, " "); // Replace Non-Breaking Space with a regular space
 };
 
 export default function TopUp() {
   const [user, setUser] = useState(null);
   const [balance, setBalance] = useState(0);
   const [selectedOption, setSelectedOption] = useState(null);
+  const [message, setMessage] = useState("");
   const router = useRouter();
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
+        console.log("User authenticated:", user.uid);
         setUser(user);
-        const docRef = doc(db, 'users', user.uid);
+        const docRef = doc(db, "users", user.uid);
         const docSnap = await getDoc(docRef);
         if (docSnap.exists()) {
+          console.log("Current balance:", docSnap.data().balance);
           setBalance(docSnap.data().balance);
         } else {
-          // If the document does not exist, initialize it
+          console.log("Creating new user document");
           await setDoc(docRef, { balance: 0 });
           setBalance(0);
         }
       } else {
+        console.log("User not authenticated");
         setUser(null);
       }
     });
@@ -64,25 +70,52 @@ export default function TopUp() {
   };
 
   const handleBuyNow = async () => {
-    if (user && selectedOption) {
-      const docRef = doc(db, 'users', user.uid);
-      const docSnap = await getDoc(docRef);
-      if (docSnap.exists()) {
-        const currentBalance = docSnap.data().balance;
-        const newBalance = currentBalance + selectedOption.tokens + selectedOption.bonus;
-        try {
-          await updateDoc(docRef, { balance: newBalance });
-          setBalance(newBalance); // Update local state
-          handleClose(); // Close modal after successful update
-        } catch (error) {
-          console.error('Error updating balance:', error);
-        }
-      } else {
-        // Initialize the user document if not exists (should not happen here due to useEffect handling)
-        await setDoc(docRef, { balance: selectedOption.tokens + selectedOption.bonus });
-        setBalance(selectedOption.tokens + selectedOption.bonus);
-        handleClose(); // Close modal after initialization
+    try {
+      if (!user) {
+        console.error("No user logged in");
+        return;
       }
+      if (!selectedOption) {
+        console.error("No option selected");
+        return;
+      }
+
+      const docRef = doc(db, "users", user.uid);
+      const docSnap = await getDoc(docRef);
+
+      if (docSnap.exists()) {
+        const currentBalance = docSnap.data().balance || 0;
+        const newBalance =
+          currentBalance + selectedOption.tokens + selectedOption.bonus;
+        console.log("Updating balance:", currentBalance, "->", newBalance);
+
+        await updateDoc(docRef, {
+          balance: newBalance,
+          lastTopUp: new Date().toISOString(),
+          topUpAmount: selectedOption.tokens + selectedOption.bonus,
+        });
+
+        setBalance(newBalance);
+        setMessage(
+          `Successfully added ${
+            selectedOption.tokens + selectedOption.bonus
+          } tokens!`
+        );
+        setTimeout(() => setMessage(""), 3000);
+        handleClose();
+      } else {
+        console.log("Creating new user document with initial balance");
+        await setDoc(docRef, {
+          balance: selectedOption.tokens + selectedOption.bonus,
+          lastTopUp: new Date().toISOString(),
+          topUpAmount: selectedOption.tokens + selectedOption.bonus,
+        });
+        setBalance(selectedOption.tokens + selectedOption.bonus);
+        handleClose();
+      }
+    } catch (error) {
+      console.error("Error in handleBuyNow:", error);
+      alert("Failed to process top-up. Please try again.");
     }
   };
 
@@ -93,7 +126,9 @@ export default function TopUp() {
         <div className="flex items-center">
           {user ? (
             <>
-              <span className="text-xl font-bold">{formatCurrency(balance)}</span>
+              <span className="text-xl font-bold">
+                {formatCurrency(balance)}
+              </span>
             </>
           ) : (
             <span className="text-xl font-bold">
@@ -102,7 +137,12 @@ export default function TopUp() {
           )}
         </div>
         <div>
-          <button onClick={() => router.push('/')} className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded">Back to Home</button>
+          <button
+            onClick={() => router.push("/")}
+            className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded"
+          >
+            Back to Home
+          </button>
         </div>
       </header>
       <main className="p-4">
@@ -114,9 +154,15 @@ export default function TopUp() {
               className="bg-gray-800 p-4 rounded-lg cursor-pointer"
               onClick={() => handleOptionClick(option)}
             >
-              <Image src={option.image} alt={`Top up ${option.tokens} tokens`} className="w-full h-32 object-cover rounded-md mb-2" />
+              <Image
+                src={option.image}
+                alt={`Top up ${option.tokens} tokens`}
+                className="w-full h-32 object-cover rounded-md mb-2"
+              />
               <div className="flex justify-between items-center">
-                <h2 className="text-lg font-bold">{option.tokens}+{option.bonus}</h2>
+                <h2 className="text-lg font-bold">
+                  {option.tokens}+{option.bonus}
+                </h2>
                 <p>{formatCurrency(option.price)}</p>
               </div>
             </div>
@@ -145,9 +191,25 @@ export default function TopUp() {
                 <span>Price:</span>
                 <span>{formatCurrency(selectedOption.price)}</span>
               </div>
-              <button onClick={handleBuyNow} className="w-full bg-purple-600 text-white py-2 rounded mb-4">Buy Now</button>
-              <button onClick={handleClose} className="w-full bg-gray-600 text-white py-2 rounded">Close</button>
+              <button
+                onClick={handleBuyNow}
+                className="w-full bg-purple-600 text-white py-2 rounded mb-4"
+              >
+                Buy Now
+              </button>
+              <button
+                onClick={handleClose}
+                className="w-full bg-gray-600 text-white py-2 rounded"
+              >
+                Close
+              </button>
             </div>
+          </div>
+        )}
+
+        {message && (
+          <div className="fixed top-4 right-4 bg-green-500 text-white p-4 rounded-md">
+            {message}
           </div>
         )}
       </main>
