@@ -1,15 +1,9 @@
 "use client";
-import { useState, useEffect } from "react";
-import { onAuthStateChanged } from "firebase/auth";
-import {
-  doc,
-  getDocs,
-  collection,
-  updateDoc,
-  setDoc,
-} from "firebase/firestore";
-import { auth, db } from "../../lib/firebase";
-import { useRouter } from "next/navigation";
+import { useState, useEffect } from 'react';
+import { onAuthStateChanged } from 'firebase/auth';
+import { doc, getDocs, collection, updateDoc, setDoc } from 'firebase/firestore';
+import { auth, db } from '../../lib/firebase';
+import { useRouter } from 'next/navigation';
 
 export default function Admin() {
   const [user, setUser] = useState(null);
@@ -24,13 +18,13 @@ export default function Admin() {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
         setUser(user);
-        if (user.email !== "admin@gmail.com") {
-          router.push("/"); // Redirect non-admin users to the home page
+        if (user.email !== 'admin@gmail.com') {
+          router.push('/'); // Redirect non-admin users to the home page
         } else {
           fetchPlayers(); // Fetch players if admin
         }
       } else {
-        router.push("/login"); // Redirect to login if not authenticated
+        router.push('/login'); // Redirect to login if not authenticated
       }
     });
     return () => unsubscribe();
@@ -38,7 +32,7 @@ export default function Admin() {
 
   const fetchPlayers = async () => {
     try {
-      const querySnapshot = await getDocs(collection(db, "users"));
+      const querySnapshot = await getDocs(collection(db, 'users'));
       const playersList = [];
       for (const docSnap of querySnapshot.docs) {
         const data = docSnap.data();
@@ -50,7 +44,7 @@ export default function Admin() {
       }
       setPlayers(playersList);
     } catch (error) {
-      console.error("Error fetching players:", error);
+      console.error('Error fetching players:', error);
     }
   };
 
@@ -63,25 +57,23 @@ export default function Admin() {
 
   const handleUpdatePlayer = async () => {
     if (selectedPlayer) {
-      const docRef = doc(db, "users", selectedPlayer.id);
+      const docRef = doc(db, 'users', selectedPlayer.id);
       try {
         await updateDoc(docRef, {
           balance,
           winPercentage,
         });
-        setPlayers(
-          players.map((player) =>
-            player.id === selectedPlayer.id
-              ? { ...player, balance, winPercentage }
-              : player
-          )
-        );
+        setPlayers(players.map(player =>
+          player.id === selectedPlayer.id
+            ? { ...player, balance, winPercentage }
+            : player
+        ));
         setIsModalOpen(false);
         setSelectedPlayer(null);
         setBalance(0);
         setWinPercentage(0);
       } catch (error) {
-        console.error("Error updating player:", error);
+        console.error('Error updating player:', error);
       }
     }
   };
@@ -90,12 +82,7 @@ export default function Admin() {
     <div className="bg-gray-900 text-white min-h-screen">
       <header className="flex justify-between items-center p-4 bg-gray-800">
         <div className="text-xl font-bold">Admin Dashboard</div>
-        <button
-          onClick={() => router.push("/")}
-          className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded"
-        >
-          Back to Home
-        </button>
+        <button onClick={() => router.push('/')} className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded">Back to Home</button>
       </header>
       <main className="p-4">
         <h1 className="text-3xl font-bold mb-4">Manage Players</h1>
@@ -112,18 +99,14 @@ export default function Admin() {
             <tbody>
               {players.length === 0 ? (
                 <tr>
-                  <td colSpan="4" className="py-2 px-4 text-center">
-                    No players found
-                  </td>
+                  <td colSpan="4" className="py-2 px-4 text-center">No players found</td>
                 </tr>
               ) : (
-                players.map((player) => (
+                players.map(player => (
                   <tr key={player.id} className="hover:bg-gray-700">
                     <td className="py-2 px-6">{player.email}</td>
                     <td className="py-2 px-4">${player.balance.toFixed(2)}</td>
-                    <td className="py-2 px-4">
-                      {player.winPercentage.toFixed(2)}%
-                    </td>
+                    <td className="py-2 px-4">{player.winPercentage.toFixed(2)}%</td>
                     <td className="py-2 px-4 text-center">
                       <button
                         onClick={() => handlePlayerSelect(player)}
@@ -153,9 +136,7 @@ export default function Admin() {
                 />
               </div>
               <div className="mb-4">
-                <label className="block text-gray-400 mb-2">
-                  Win Percentage
-                </label>
+                <label className="block text-gray-400 mb-2">Win Percentage</label>
                 <input
                   type="number"
                   value={winPercentage}
@@ -163,18 +144,8 @@ export default function Admin() {
                   className="w-full p-2 border rounded bg-gray-700"
                 />
               </div>
-              <button
-                onClick={handleUpdatePlayer}
-                className="w-full bg-purple-600 text-white py-2 rounded mb-4"
-              >
-                Update Player
-              </button>
-              <button
-                onClick={() => setIsModalOpen(false)}
-                className="w-full bg-gray-600 text-white py-2 rounded"
-              >
-                Close
-              </button>
+              <button onClick={handleUpdatePlayer} className="w-full bg-purple-600 text-white py-2 rounded mb-4">Update Player</button>
+              <button onClick={() => setIsModalOpen(false)} className="w-full bg-gray-600 text-white py-2 rounded">Close</button>
             </div>
           </div>
         )}

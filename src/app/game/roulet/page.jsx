@@ -18,6 +18,46 @@ const formatCurrency = (amount) => {
   });
 };
 
+const numberToColor = {
+  0: "green",
+  1: "red",
+  2: "black",
+  3: "red",
+  4: "black",
+  5: "red",
+  6: "black",
+  7: "red",
+  8: "black",
+  9: "red",
+  10: "black",
+  11: "black",
+  12: "red",
+  13: "black",
+  14: "red",
+  15: "black",
+  16: "red",
+  17: "black",
+  18: "red",
+  19: "red",
+  20: "black",
+  21: "red",
+  22: "black",
+  23: "red",
+  24: "black",
+  25: "red",
+  26: "black",
+  27: "red",
+  28: "black",
+  29: "black",
+  30: "red",
+  31: "black",
+  32: "red",
+  33: "black",
+  34: "red",
+  35: "black",
+  36: "red",
+};
+
 export default function Home() {
   const [balance, setBalance] = useState(0);
   const [bet, setBet] = useState(0);
@@ -78,12 +118,11 @@ export default function Home() {
     let winAmount = 0;
     let lossAmount = 0;
 
-    // Implement 1:2 win ratio using random number
-    const winChance = Math.random();
-    const willWin = winChance <= 0.33; // 33% chance to win (1:2 ratio)
+    // Get the actual color of the landed number
+    const resultColor = numberToColor[result.number];
 
     if (selectedColor) {
-      isWin = willWin; // Use predetermined win/loss instead of actual color match
+      isWin = selectedColor === resultColor;
 
       if (selectedColor === "green") {
         // Green color special rules (high risk, high reward)
@@ -101,7 +140,7 @@ export default function Home() {
         }
       }
     } else if (selectedNumber !== null) {
-      isWin = willWin; // Use same win chance as green
+      isWin = selectedNumber === result.number;
       if (isWin) {
         winAmount = bet * 5; // Same multiplier as green
       } else {
@@ -119,8 +158,12 @@ export default function Home() {
       setBalance(newBalance);
       setMessage(
         isWin
-          ? `Congratulations! You won ${formatCurrency(winAmount)}!`
-          : `Sorry, you lost ${formatCurrency(lossAmount)}.`
+          ? `Congratulations! You won ${formatCurrency(winAmount)}! (Number: ${
+              result.number
+            }, Color: ${resultColor})`
+          : `Sorry, you lost ${formatCurrency(lossAmount)}. (Number: ${
+              result.number
+            }, Color: ${resultColor})`
       );
 
       // Reset bet after spin
