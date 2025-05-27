@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { onAuthStateChanged } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
@@ -102,8 +102,9 @@ export default function Withdraw() {
           </select>
         </div>
         <div className="mb-4">
-          <label className="block text-gray-400 mb-2">Amount to Withdraw (Points)</label>
+          <label htmlFor="withdraw-amount" className="block text-gray-400 mb-2">Amount to Withdraw (Points)</label>
           <input
+            id="withdraw-amount"
             type="number"
             value={amount}
             onChange={handleAmountChange}
