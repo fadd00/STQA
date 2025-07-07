@@ -161,7 +161,7 @@ export default function Blackjack() {
         <span className="mr-1">←</span> Back
       </button>
 
-      <h1 className="text-4xl font-bold mb-8">Blackjack</h1>
+      <h1 className="text-4xl font-bold mb-8">Blek jek</h1>
 
       <div className="mb-4 text-xl">
         <p>Balance: ${balance}</p>

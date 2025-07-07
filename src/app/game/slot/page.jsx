@@ -133,7 +133,7 @@ export default function SlotMachine() {
       </button>
 
       <div className="max-w-md mx-auto text-center">
-        <h1 className="text-4xl mb-8">Slot Machine</h1>
+        <h1 className="text-4xl mb-8">Slot machine</h1>
 
         <div className="bg-gray-800 p-4 rounded-lg mb-8">
           <div className="grid grid-cols-3 gap-4 mb-4">
