@@ -126,7 +126,7 @@ export default function Lottery() {
 
         <div className="mb-4">
           <p className="text-xl">Balance: ${balance}</p>
-          <p className="text-xl">Current Bet: ${bet}</p>
+          <p className="text-xl">Current: ${bet}</p>
         </div>
 
         <div className="mb-4">
